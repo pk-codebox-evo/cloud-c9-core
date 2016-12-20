@@ -221,7 +221,10 @@ function testVim(name, run, opts, expectedFail) {
           arguments = args;
         }
         for (var i = 0; i < arguments.length; i++) {
-          CodeMirror.Vim.handleKey(cm, arguments[i]);
+          var result = CodeMirror.Vim.handleKey(cm, arguments[i]);
+          if (!result && cm.state.vim.insertMode) {
+            cm.replaceSelections(fillArray(arguments[i], cm.listSelections().length));
+          }
         }
       }
     }
@@ -243,7 +246,7 @@ function testVim(name, run, opts, expectedFail) {
           // Record for insert mode.
           if (handled == "handled" && cm.state.vim.insertMode && arguments[i] != 'Esc') {
             var lastChange = CodeMirror.Vim.getVimGlobalState_().macroModeState.lastInsertModeChanges;
-            if (lastChange) {
+            if (lastChange && (key.indexOf('Delete') != -1 || key.indexOf('Backspace') != -1)) {
               lastChange.changes.push(new CodeMirror.Vim.InsertModeKey(key));
             }
           }
@@ -2905,6 +2908,14 @@ testVim('._insert', function(cm, vim, helpers) {
   helpers.doKeys('.');
   eq('testestt', cm.getValue());
   helpers.assertCursorAt(0, 6);
+  helpers.doKeys('O');
+  cm.replaceRange('xyz', cm.getCursor());
+  helpers.doInsertModeKeys('Backspace');
+  helpers.doInsertModeKeys('Down');
+  helpers.doKeys('<Esc>');
+  helpers.doKeys('.');
+  eq('xy\nxy\ntestestt', cm.getValue());
+  helpers.assertCursorAt(1, 1);
 }, { value: ''});
 testVim('._insert_repeat', function(cm, vim, helpers) {
   helpers.doKeys('i');
@@ -4057,7 +4068,17 @@ testVim('ex_imap', function(cm, vim, helpers) {
   is(vim.insertMode);
   helpers.doKeys('j', 'k');
   is(!vim.insertMode);
-});
+  cm.setCursor(0, 1);
+  CodeMirror.Vim.map('jj', '<Esc>', 'insert');
+  helpers.doKeys('<C-v>', '2', 'j', 'l', 'c');
+  var replacement = fillArray('fo', 3);
+  cm.replaceSelections(replacement);
+  eq('1fo4\n5fo8\nafodefg', cm.getValue());
+  helpers.doKeys('j', 'j');
+  cm.setCursor(0, 0);
+  helpers.doKeys('.');
+  eq('foo4\nfoo8\nfoodefg', cm.getValue());
+}, { value: '1234\n5678\nabcdefg' });
 testVim('ex_unmap_api', function(cm, vim, helpers) {
   CodeMirror.Vim.map('<Alt-X>', 'gg', 'normal');
   is(CodeMirror.Vim.handleKey(cm, "<Alt-X>", "normal"), "Alt-X key is mapped");

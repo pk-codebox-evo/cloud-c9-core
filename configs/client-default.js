@@ -674,7 +674,6 @@ module.exports = function(options) {
                 name: options.user.name,
                 fullname: options.user.fullname,
                 email: options.user.email,
-                pubkey: options.user.pubkey,
                 date_add: options.user.date_add,
                 active: options.user.active,
                 c9version: options.user.c9version,
@@ -820,7 +819,7 @@ module.exports = function(options) {
             packagePath: "plugins/c9.ide.errorhandler/raygun_error_handler",
             version: options.manifest.version,
             revision: options.manifest.revision,
-            apiKey: options.raygun.apiKey || options.raygun.client.apiKey
+            apiKey: options.raygun.apiKey
         });
     }
     if (packaging || devel) {
@@ -895,7 +894,8 @@ module.exports = function(options) {
         {
             packagePath: "plugins/c9.ide.collab/chat/chat",
             staticPrefix: staticPrefix + "/plugins/c9.ide.collab/chat"
-        });
+        },
+        "plugins/c9.ide.format/formatters/custom");
     }
     
     if (options.platform !== "win32") {
